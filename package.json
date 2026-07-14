@@ -1,0 +1,31 @@
+{
+  "name": "api-realtime",
+  "version": "1.0.0",
+  "description": "\"# orders-realtime-api\" \r \"# immo-realtime-api\"",
+  "main": "server.js",
+  "scripts": {
+    "start": "nodemon server.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "cors": "^2.8.6",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "socket.io": "^4.8.3"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.14"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/RussellKaniki8299/immo-realtime-api.git"
+  },
+  "bugs": {
+    "url": "https://github.com/RussellKaniki8299/immo-realtime-api/issues"
+  },
+  "homepage": "https://github.com/RussellKaniki8299/immo-realtime-api#readme"
+}
