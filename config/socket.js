@@ -2,6 +2,7 @@ const { Server } = require("socket.io");
 
 const ordersSocket = require("../sockets/orders.socket");
 
+
 module.exports = (server) => {
 
   const io = new Server(server, {
@@ -13,10 +14,12 @@ module.exports = (server) => {
 
   global.io = io;
 
+  global.connectedAgents = {};
+  global.connectedAdmins = [];
+
   // =========================
   // CONNECTED AGENTS
   // =========================
-  global.connectedAgents = {};
 
   io.on("connection", (socket) => {
 
@@ -42,6 +45,30 @@ module.exports = (server) => {
 
       }
     );
+
+
+    socket.on("join_admin", (admin) => {
+
+        socket.join("admins");
+
+        const exists = global.connectedAdmins.find(
+            a => a.userId === admin.userId
+        );
+
+        if (!exists) {
+            global.connectedAdmins.push({
+                ...admin,
+                socketId: socket.id
+            });
+        }
+
+        console.log(
+            `Admin ${admin.nom} connecté`
+        );
+
+        console.table(global.connectedAdmins);
+
+    });
 
     // =========================
     // JOIN agence
@@ -143,38 +170,27 @@ module.exports = (server) => {
     // =========================
     // DISCONNECT
     // =========================
-    socket.on(
-      "disconnect",
-      (reason) => {
+    socket.on("disconnect", (reason) => {
 
-        console.log(
-          "User disconnected :",
-          reason
-        );
+        console.log("User disconnected :", reason);
 
-        Object.keys(
-          global.connectedAgents
-        ).forEach(
-          (agenceId) => {
+        Object.keys(global.connectedAgents).forEach((agenceId) => {
 
-            global.connectedAgents[
-              agenceId
-            ] =
-              global.connectedAgents[
-                agenceId
-              ].filter(
-                (agent) =>
-                  agent.socketId !==
-                  socket.id
-              );
+            global.connectedAgents[agenceId] =
+                global.connectedAgents[agenceId].filter(
+                    agent => agent.socketId !== socket.id
+                );
 
-          }
-        );
+        });
 
-      }
-    );
+        global.connectedAdmins =
+            global.connectedAdmins.filter(
+                admin => admin.socketId !== socket.id
+            );
 
-  });
+    });
+
+  }); 
 
 
 };

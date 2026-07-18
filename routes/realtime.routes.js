@@ -7,7 +7,8 @@ const {
   orderStatusUpdated,
   ordersCount,
   newOrderKitchen,
-  newSaleKitchen
+  newSaleKitchen,
+  newContact,
 } = require("../controllers/realtime.controller");
 
 // =========================
@@ -48,6 +49,14 @@ router.post(
 router.post(
   "/new-sale-kitchen",
   newSaleKitchen
+);
+
+// =========================
+// NEW CONTACT
+// =========================
+router.post(
+  "/contact-created",
+  newContact
 );
 
 module.exports = router;

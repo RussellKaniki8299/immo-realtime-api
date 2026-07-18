@@ -159,3 +159,53 @@ exports.newSaleKitchen = async (req, res) => {
     });
   }
 };
+
+
+exports.newContact = async (req, res) => {
+
+    try {
+
+        const data = req.body;
+
+        console.log("Nouveau message :", data);
+
+        if (!global.io) {
+            return res.status(500).json({
+                success: false,
+                message: "Socket.IO non initialisé",
+            });
+        }
+
+        global.io.to("admins").emit("new_contact", data);
+
+        console.log("\n=========================");
+        console.log(
+            `Admins notifiés : ${global.connectedAdmins.length}`
+        );
+
+        global.connectedAdmins.forEach((admin, index) => {
+
+            console.log(
+                `${index + 1}. ${admin.nom} | ${admin.role}`
+            );
+
+        });
+
+        console.log("=========================\n");
+
+        return res.json({
+            success: true,
+            notifiedAdmins: global.connectedAdmins,
+        });
+
+    } catch (error) {
+
+        console.error(error);
+
+        return res.status(500).json({
+            success: false,
+        });
+
+    }
+
+};
