@@ -2,7 +2,6 @@ const { Server } = require("socket.io");
 
 const ordersSocket = require("../sockets/orders.socket");
 
-
 module.exports = (server) => {
 
   const io = new Server(server, {
@@ -18,7 +17,7 @@ module.exports = (server) => {
   global.connectedAdmins = [];
 
   // =========================
-  // CONNECTED AGENTS
+  // CONNECTION SOCKET
   // =========================
 
   io.on("connection", (socket) => {
@@ -26,6 +25,19 @@ module.exports = (server) => {
     console.log(
       "User connected :",
       socket.id
+    );
+
+    // =========================
+    // JOIN USER (Pour le Chat Privé)
+    // =========================
+    socket.on(
+      "join_user",
+      (userId) => {
+        if (userId) {
+          socket.join(`user_${userId}`);
+          console.log(`Utilisateur ID ${userId} a rejoint sa room privée : user_${userId}`);
+        }
+      }
     );
 
     // =========================
@@ -46,7 +58,9 @@ module.exports = (server) => {
       }
     );
 
-
+    // =========================
+    // JOIN ADMIN
+    // =========================
     socket.on("join_admin", (admin) => {
 
         socket.join("admins");
@@ -147,6 +161,7 @@ module.exports = (server) => {
       }
     );
 
+    // =========================
     // JOIN agence KITCHEN
     // =========================
     socket.on(
@@ -191,6 +206,5 @@ module.exports = (server) => {
     });
 
   }); 
-
 
 };

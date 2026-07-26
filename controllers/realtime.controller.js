@@ -1,9 +1,11 @@
+// =========================
+// NEW ORDER
+// =========================
 exports.newOrder = async (req, res) => {
   try {
     const data = req.body;
     console.log("Nouvelle commande :", data);
 
-    // Vérifier io
     if (!global.io) {
       return res.status(500).json({
         success: false,
@@ -160,52 +162,92 @@ exports.newSaleKitchen = async (req, res) => {
   }
 };
 
-
+// =========================
+// NEW CONTACT
+// =========================
 exports.newContact = async (req, res) => {
+  try {
+    const data = req.body;
 
-    try {
+    console.log("Nouveau message :", data);
 
-        const data = req.body;
-
-        console.log("Nouveau message :", data);
-
-        if (!global.io) {
-            return res.status(500).json({
-                success: false,
-                message: "Socket.IO non initialisé",
-            });
-        }
-
-        global.io.to("admins").emit("new_contact", data);
-
-        console.log("\n=========================");
-        console.log(
-            `Admins notifiés : ${global.connectedAdmins.length}`
-        );
-
-        global.connectedAdmins.forEach((admin, index) => {
-
-            console.log(
-                `${index + 1}. ${admin.nom} | ${admin.role}`
-            );
-
-        });
-
-        console.log("=========================\n");
-
-        return res.json({
-            success: true,
-            notifiedAdmins: global.connectedAdmins,
-        });
-
-    } catch (error) {
-
-        console.error(error);
-
-        return res.status(500).json({
-            success: false,
-        });
-
+    if (!global.io) {
+      return res.status(500).json({
+        success: false,
+        message: "Socket.IO non initialisé",
+      });
     }
 
+    global.io.to("admins").emit("new_contact", data);
+
+    console.log("\n=========================");
+    console.log(`Admins notifiés : ${global.connectedAdmins?.length || 0}`);
+
+    if (global.connectedAdmins) {
+      global.connectedAdmins.forEach((admin, index) => {
+        console.log(`${index + 1}. ${admin.nom} | ${admin.role}`);
+      });
+    }
+
+    console.log("=========================\n");
+
+    return res.json({
+      success: true,
+      notifiedAdmins: global.connectedAdmins || [],
+    });
+  } catch (error) {
+    console.error(error);
+
+    return res.status(500).json({
+      success: false,
+    });
+  }
+};
+
+// =========================
+// CHAT MESSAGE (Privé)
+// =========================
+exports.chatMessage = async (req, res) => {
+  try {
+    const { message } = req.body;
+
+    console.log("Nouveau message de chat reçu de Laravel :", message);
+
+    if (!global.io) {
+      return res.status(500).json({
+        success: false,
+        message: "Socket.IO non initialisé",
+      });
+    }
+
+    if (!message || !message.sender_id || !message.receiver_id) {
+      return res.status(400).json({
+        success: false,
+        message: "Données du message invalides (sender_id ou receiver_id manquant)",
+      });
+    }
+
+    const senderRoom = `user_${message.sender_id}`;
+    const receiverRoom = `user_${message.receiver_id}`;
+
+    // Diffusion stricte uniquement aux deux utilisateurs concernés (Expéditeur et Destinataire)
+    global.io.to(senderRoom).to(receiverRoom).emit("new_message", message);
+
+    console.log(`\n=========================`);
+    console.log(`Chat privé diffusé via Socket.IO :`);
+    console.log(`- Expéditeur room : ${senderRoom}`);
+    console.log(`- Destinataire room : ${receiverRoom}`);
+    console.log(`=========================\n`);
+
+    return res.json({
+      success: true,
+      message: "Message de chat transmis en temps réel aux utilisateurs concernés",
+    });
+  } catch (error) {
+    console.error("Erreur chatMessage :", error);
+    return res.status(500).json({
+      success: false,
+      error: error.message,
+    });
+  }
 };
