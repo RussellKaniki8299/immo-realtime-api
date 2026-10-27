@@ -6,6 +6,7 @@ const cors = require("cors");
 
 const setupSocket = require("./config/socket");
 const realtimeRoutes = require("./routes/realtime.routes");
+const healthRoutes = require("./routes/health.routes");
 
 const app = express();
 
@@ -15,13 +16,16 @@ app.use(express.json());
 
 const server = http.createServer(app);
 
-// INITIALISATION SOCKET.IO (injecte global.io et gère les rooms)
+// Socket.IO
 setupSocket(server);
 
-// ROUTES REALTIME
+// Routes realtime
 app.use("/api/realtime", realtimeRoutes);
 
-// ROUTE DE TEST
+// Monitoring
+app.use("/api/health", healthRoutes);
+
+// Route de test
 app.get("/", (req, res) => {
   res.send("Realtime server running...");
 });

@@ -251,3 +251,70 @@ exports.chatMessage = async (req, res) => {
     });
   }
 };
+
+// =========================
+// UNREAD COUNT (badge messages) — appelée par Laravel, était MANQUANTE
+// =========================
+exports.unreadCount = async (req, res) => {
+  try {
+    const { user_id, total_unread } = req.body;
+    if (!global.io) return res.status(500).json({ success: false, message: "Socket.IO non initialisé" });
+    if (!user_id) return res.status(400).json({ success: false, message: "user_id manquant" });
+
+    global.io.to(`user_${user_id}`).emit("unread_count_updated", {
+      user_id: Number(user_id),
+      total_unread: Number(total_unread) || 0,
+    });
+
+    return res.json({ success: true });
+  } catch (error) {
+    console.error("unreadCount error :", error);
+    return res.status(500).json({ success: false });
+  }
+};
+
+// =========================
+// MESSAGES LUS ("vu" côté expéditeur)
+// =========================
+exports.messagesRead = async (req, res) => {
+  try {
+    const { sender_id, reader_id } = req.body;
+    if (!global.io) return res.status(500).json({ success: false, message: "Socket.IO non initialisé" });
+    if (!sender_id || !reader_id) return res.status(400).json({ success: false });
+
+    global.io.to(`user_${sender_id}`).emit("messages_read", {
+      reader_id: Number(reader_id),
+    });
+
+    return res.json({ success: true });
+  } catch (error) {
+    console.error("messagesRead error :", error);
+    return res.status(500).json({ success: false });
+  }
+};
+
+// =========================
+// ÉVÉNEMENTS D'APPEL (call:incoming, call:accepted, call:ended, call:reminder …)
+// =========================
+const ALLOWED_CALL_EVENTS = new Set([
+  "call:incoming", "call:accepted", "call:declined", "call:cancelled",
+  "call:ended", "call:missed", "call:scheduled", "call:reminder", "call:due",
+]);
+
+exports.callEvent = async (req, res) => {
+  try {
+    const { event, user_ids, payload } = req.body;
+    if (!global.io) return res.status(500).json({ success: false, message: "Socket.IO non initialisé" });
+
+    if (!ALLOWED_CALL_EVENTS.has(event) || !Array.isArray(user_ids)) {
+      return res.status(400).json({ success: false, message: "Événement invalide" });
+    }
+
+    user_ids.forEach((id) => global.io.to(`user_${id}`).emit(event, payload));
+
+    return res.json({ success: true });
+  } catch (error) {
+    console.error("callEvent error :", error);
+    return res.status(500).json({ success: false });
+  }
+};

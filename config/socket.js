@@ -1,210 +1,61 @@
-const { Server } = require("socket.io");
+const { Server } = require('socket.io');
 
-const ordersSocket = require("../sockets/orders.socket");
+const env = require('./env');
+const socketAuth = require('../middleware/socketAuth');
+const ordersSocket = require('../sockets/orders.socket');
+const chatSocket = require('../sockets/chat.socket');
+const callSocket = require('../sockets/call.socket');
 
 module.exports = (server) => {
-
   const io = new Server(server, {
     cors: {
-      origin: "*",
-      methods: ["GET", "POST"],
+      origin: env.corsOrigins.length ? env.corsOrigins : '*',
+      methods: ['GET', 'POST'],
     },
   });
 
   global.io = io;
-
   global.connectedAgents = {};
   global.connectedAdmins = [];
 
-  // =========================
-  // CONNECTION SOCKET
-  // =========================
+  io.use(socketAuth);
 
-  io.on("connection", (socket) => {
+  io.on('connection', (socket) => {
+    // ----- Modules messagerie & appels (nouveaux) -----
+    chatSocket(io, socket);
+    callSocket(io, socket);
 
-    console.log(
-      "User connected :",
-      socket.id
-    );
+    // ----- Rooms métier existantes (inchangées) -----
+    socket.on('join_client', (clientId) => socket.join(`client_${clientId}`));
 
-    // =========================
-    // JOIN USER (Pour le Chat Privé)
-    // =========================
-    socket.on(
-      "join_user",
-      (userId) => {
-        if (userId) {
-          socket.join(`user_${userId}`);
-          console.log(`Utilisateur ID ${userId} a rejoint sa room privée : user_${userId}`);
-        }
+    socket.on('join_admin', (admin) => {
+      socket.join('admins');
+      if (!global.connectedAdmins.find((a) => a.userId === admin.userId)) {
+        global.connectedAdmins.push({ ...admin, socketId: socket.id });
       }
-    );
-
-    // =========================
-    // JOIN CLIENT
-    // =========================
-    socket.on(
-      "join_client",
-      (clientId) => {
-
-        socket.join(
-          `client_${clientId}`
-        );
-
-        console.log(
-          `Client joined client_${clientId}`
-        );
-
-      }
-    );
-
-    // =========================
-    // JOIN ADMIN
-    // =========================
-    socket.on("join_admin", (admin) => {
-
-        socket.join("admins");
-
-        const exists = global.connectedAdmins.find(
-            a => a.userId === admin.userId
-        );
-
-        if (!exists) {
-            global.connectedAdmins.push({
-                ...admin,
-                socketId: socket.id
-            });
-        }
-
-        console.log(
-            `Admin ${admin.nom} connecté`
-        );
-
-        console.table(global.connectedAdmins);
-
     });
 
-    // =========================
-    // JOIN agence
-    // =========================
-    socket.on(
-      "join_agence",
-      (agenceId) => {
+    socket.on('join_agence', (agenceId) => socket.join(`agence_${agenceId}`));
 
-        socket.join(
-          `agence_${agenceId}`
-        );
-
-        console.log(
-          `Joined agence_${agenceId}`
-        );
-
+    socket.on('join_agence_agent', ({ agenceId, userId, nom, role }) => {
+      socket.join(`agence_agents_${agenceId}`);
+      global.connectedAgents[agenceId] = global.connectedAgents[agenceId] || [];
+      if (!global.connectedAgents[agenceId].find((a) => a.userId === userId)) {
+        global.connectedAgents[agenceId].push({ userId, nom, role, socketId: socket.id });
       }
-    );
-    
+    });
 
-    // =========================
-    // JOIN agence AGENT
-    // =========================
-    socket.on(
-      "join_agence_agent",
-      (data) => {
+    socket.on('join_agence_kitchen', (agenceId) => socket.join(`agence_kitchen_${agenceId}`));
 
-        const {
-          agenceId,
-          userId,
-          nom,
-          role,
-        } = data;
-
-        socket.join(
-          `agence_agents_${agenceId}`
-        );
-
-        if (
-          !global.connectedAgents[
-            agenceId
-          ]
-        ) {
-
-          global.connectedAgents[
-            agenceId
-          ] = [];
-
-        }
-
-        const exists =
-          global.connectedAgents[
-            agenceId
-          ].find(
-            (a) =>
-              a.userId === userId
-          );
-
-        if (!exists) {
-
-          global.connectedAgents[
-            agenceId
-          ].push({
-            userId,
-            nom,
-            role,
-            socketId: socket.id,
-          });
-
-        }
-
-        console.log(
-          `Agent ${nom} joined agence_agents_${agenceId}`
-        );
-
-      }
-    );
-
-    // =========================
-    // JOIN agence KITCHEN
-    // =========================
-    socket.on(
-      "join_agence_kitchen",
-      (agenceId) => {
-
-        socket.join(
-          `agence_kitchen_${agenceId}`
-        );
-
-        console.log(
-          `Joined kitchen agence_kitchen_${agenceId}`
-        );
-
-      }
-    );
-
-    // SOCKET MODULES
     ordersSocket(io, socket);
 
-    // =========================
-    // DISCONNECT
-    // =========================
-    socket.on("disconnect", (reason) => {
-
-        console.log("User disconnected :", reason);
-
-        Object.keys(global.connectedAgents).forEach((agenceId) => {
-
-            global.connectedAgents[agenceId] =
-                global.connectedAgents[agenceId].filter(
-                    agent => agent.socketId !== socket.id
-                );
-
-        });
-
-        global.connectedAdmins =
-            global.connectedAdmins.filter(
-                admin => admin.socketId !== socket.id
-            );
-
+    socket.on('disconnect', () => {
+      Object.keys(global.connectedAgents).forEach((agenceId) => {
+        global.connectedAgents[agenceId] = global.connectedAgents[agenceId].filter(
+          (agent) => agent.socketId !== socket.id
+        );
+      });
+      global.connectedAdmins = global.connectedAdmins.filter((a) => a.socketId !== socket.id);
     });
-
-  }); 
-
+  });
 };

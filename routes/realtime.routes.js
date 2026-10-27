@@ -1,6 +1,7 @@
 const express = require("express");
 const router = express.Router();
 
+const internalAuth = require("../middleware/internalAuth");
 const {
   newOrder,
   orderStatusUpdated,
@@ -8,42 +9,24 @@ const {
   newOrderKitchen,
   newSaleKitchen,
   newContact,
-  chatMessage, // <--- Import de la nouvelle fonction
+  chatMessage,
+  unreadCount,
+  messagesRead,
+  callEvent,
 } = require("../controllers/realtime.controller");
 
-// =========================
-// NEW ORDER
-// =========================
+// ---------- Routes métier existantes (inchangées, non protégées pour ne rien casser) ----------
 router.post("/new-order", newOrder);
-
-// =========================
-// UPDATE STATUS
-// =========================
 router.post("/order-status-updated", orderStatusUpdated);
-
-// =========================
-// ORDERS COUNT REALTIME
-// =========================
 router.post("/orders-count", ordersCount);
-
-// =========================
-// NEW ORDER KITCHEN
-// =========================
 router.post("/new-order-kitchen", newOrderKitchen);
-
-// =========================
-// NEW SALE KITCHEN
-// =========================
 router.post("/new-sale-kitchen", newSaleKitchen);
-
-// =========================
-// NEW CONTACT
-// =========================
 router.post("/contact-created", newContact);
 
-// =========================
-// CHAT MESSAGE (Privé entre 2 users)
-// =========================
-router.post("/chat-message", chatMessage); // <--- Nouvelle route appelée par Laravel
+// ---------- Messagerie & appels : protégées par x-internal-secret ----------
+router.post("/chat-message", internalAuth, chatMessage);
+router.post("/unread-count", internalAuth, unreadCount);
+router.post("/messages-read", internalAuth, messagesRead);
+router.post("/call-event", internalAuth, callEvent);
 
 module.exports = router;
