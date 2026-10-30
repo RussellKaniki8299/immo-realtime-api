@@ -1,31 +1,19 @@
 {
-  "name": "api-realtime",
-  "version": "1.0.0",
-  "description": "\"# orders-realtime-api\" \r \"# immo-realtime-api\"",
-  "main": "server.js",
+  "name": "kinmak-realtime-server",
+  "version": "2.0.0",
+  "private": true,
+  "description": "Serveur temps réel Kinmak (Socket.IO) : commandes, messagerie, signalisation d'appels audio/vidéo",
+  "main": "src/server.js",
   "scripts": {
-    "start": "nodemon server.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js",
+    "test": "node test/smoke.test.js"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "type": "commonjs",
+  "engines": { "node": ">=18" },
   "dependencies": {
-    "cors": "^2.8.6",
-    "dotenv": "^17.4.2",
-    "express": "^5.2.1",
-    "socket.io": "^4.8.3"
-  },
-  "devDependencies": {
-    "nodemon": "^3.1.14"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/RussellKaniki8299/immo-realtime-api.git"
-  },
-  "bugs": {
-    "url": "https://github.com/RussellKaniki8299/immo-realtime-api/issues"
-  },
-  "homepage": "https://github.com/RussellKaniki8299/immo-realtime-api#readme"
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "socket.io": "^4.7.5"
+  }
 }

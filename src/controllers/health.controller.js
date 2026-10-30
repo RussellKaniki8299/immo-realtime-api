@@ -1,4 +1,6 @@
 const os = require("os");
+const registry = require("../state/registry");
+const logger = require("../lib/logger")("health");
 
 
 // =========================================================
@@ -10,7 +12,7 @@ exports.health = async (req, res) => {
     const memory = getMemoryMetrics();
     const cpu = getCpuMetrics();
 
-    const socketStatus = global.io ? "ok" : "error";
+    const socketStatus = registry.getIo() ? "ok" : "error";
 
     const status =
       socketStatus === "ok"
@@ -42,7 +44,7 @@ exports.health = async (req, res) => {
       memory,
     });
   } catch (error) {
-    console.error("Health error:", error);
+    logger.error("Health error:", error);
 
     return res.status(500).json({
       status: "error",
@@ -72,7 +74,7 @@ exports.live = async (req, res) => {
 // =========================================================
 
 exports.ready = async (req, res) => {
-  const socketReady = !!global.io;
+  const socketReady = !!registry.getIo();
 
   const ready = socketReady;
 
@@ -119,7 +121,7 @@ exports.metrics = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error("Metrics error:", error);
+    logger.error("Metrics error:", error);
 
     return res.status(500).json({
       status: "error",
@@ -143,12 +145,12 @@ exports.connections = async (req, res) => {
       timestamp: new Date().toISOString(),
 
       websocket: {
-        status: global.io ? "ok" : "error",
+        status: registry.getIo() ? "ok" : "error",
         connections,
       },
     });
   } catch (error) {
-    console.error("Connections error:", error);
+    logger.error("Connections error:", error);
 
     return res.status(500).json({
       status: "error",
@@ -189,7 +191,7 @@ exports.server = async (req, res) => {
       load_average: os.loadavg(),
     });
   } catch (error) {
-    console.error("Server metrics error:", error);
+    logger.error("Server metrics error:", error);
 
     return res.status(500).json({
       status: "error",
@@ -205,11 +207,11 @@ exports.server = async (req, res) => {
 
 function getConnectionCount() {
   try {
-    if (!global.io) {
+    if (!registry.getIo()) {
       return 0;
     }
 
-    return global.io.engine?.clientsCount || 0;
+    return registry.getIo().engine?.clientsCount || 0;
   } catch (error) {
     return 0;
   }
